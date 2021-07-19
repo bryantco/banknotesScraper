@@ -24,10 +24,11 @@ def extractText(url, country):
         text = []
         soup = BeautifulSoup(html, 'html.parser')
         try:
-            # find number
-            for pickno in soup.find_all(re.compile("td"), {'width': '10%', 'align' : 'center','bgcolor' : '#CECECE','height' : '1'}):
-                number = pickno.text.strip()
-                allBanknotes[country][number] = {'number' : number, 'date' : '', 'denomination' : '', 'currencyname' : '', 'issuer' : '', 'fronttext' : '', 'backtext' : '' }
+            # find number: UPDATED July 2021 to be simpler 
+            pickno = soup.find(re.compile("font"), {'face': 'Arial', 'size': '6'})
+            number = pickno.text.strip()
+            print(number)
+            allBanknotes[country][number] = {'number' : number, 'date' : '', 'denomination' : '', 'currencyname' : '', 'issuer' : '', 'fronttext' : '', 'backtext' : '' }
             
             # handle misc fields 
             for pickno in soup.find_all(re.compile("td"), {'width': '10%', 'align' : 'left','bgcolor' : '#CECECE'}):
@@ -74,11 +75,11 @@ def extractBanknotes(page, noteslist):
     bnotelinks = soup.find_all('font', {'face' : 'Arial', 'size' : '5'})
     count = 0
     for i in range(len(bnotelinks)-1, -1, -1):
-        tr = bnotelinks[i].find_previous('tr').find_previous('tr')
+        # tr = bnotelinks[i].find_previous('tr').find_previous('tr')
         try:
-            a = tr.find('font')
-            #if ('commemorative' not in a.text.lower()):
-            #if (count <= 10 and 'commemorative' not in a.text.lower()):
+            # a = tr.find('font')
+            # if ('commemorative' not in a.text.lower()):
+            # if (count <= 10 and 'commemorative' not in a.text.lower()):
             linktag = bnotelinks[i].find_all("a" , recursive=False, href=True)
             for link in linktag[0:1]:
                 if('#' not in link['href'] and 'FX' not in link['href'] and link['href'][3] != 'R' and link['href'][3] != 'M' and link['href'] not in workingLinks):
@@ -105,8 +106,7 @@ def getBanks(countryurl):
                     banklinks.append(x)
     print(banklinks)
     return banklinks 
-            
-            
+   
 targetURLs = {
     "Afghanistan":"http://banknote.ws/COLLECTION/countries/ASI/AFG/AFG.htm",
     "Albania":"http://banknote.ws/COLLECTION/countries/EUR/ALB/ALB-BES.htm",
@@ -212,7 +212,7 @@ targetURLs = {
     'Nicaragua':'',
     'Nigeria':'http://banknote.ws/COLLECTION/countries/AFR/NIA/NIA.htm',
     'North Korea':'http://banknote.ws/COLLECTION/countries/ASI/KON/KON.htm',
-    'Norway':'',
+    'Norway':'http://banknote.ws/COLLECTION/countries/EUR/NOR/NOR-NOB.htm',
     'Oman':'http://banknote.ws/COLLECTION/countries/ASI/OMA/OMA.htm',
     'Pakistan':'',
     'Papua New Guinea':'http://banknote.ws/COLLECTION/countries/AUS/PNG/PNG.htm',
@@ -223,7 +223,7 @@ targetURLs = {
     'Portugal':'',
     'Qatar':'http://banknote.ws/COLLECTION/countries/ASI/QAT/QAT.htm',
     'Romania':'',
-    'Russia':'',
+    'Russia':'http://banknote.ws/COLLECTION/countries/EUR/RUS/RUS-GENERAL/RUS-FED.htm',
     'Rwanda':'http://banknote.ws/COLLECTION/countries/AFR/RWA/RWA.htm',
     'South Sudan':'http://banknote.ws/COLLECTION/countries/AFR/SSD/SSD.htm',
     'Samoa':'http://banknote.ws/COLLECTION/countries/AUS/SAM/SAM.htm',
@@ -261,7 +261,7 @@ targetURLs = {
     'Ukraine':'',
     'United Arab Emirates':'http://banknote.ws/COLLECTION/countries/ASI/UAE/UAE.htm',
     'United Kingdom':'',
-    'United States':'',
+    'United States':'http://banknote.ws/COLLECTION/countries/AME/USA/USA-FEDRES/USA-FEDRES.htm',
     'Uruguay':'',
     'Uzbekistan':'',
     'Vanuatu':'http://banknote.ws/COLLECTION/countries/AUS/VTU/VTU-VTU.htm',
@@ -630,9 +630,9 @@ continentCode = {
     'SYR':'ASI',
     'TWN':'ASI',
     'TAJ':'ASI',
-    'TAN':'ASI',
+    'TAN':'AFR',
     'THL':'ASI',
-    'TON':'ASI',
+    'TON':'AUS',
     'TRT':'AME',
     'TUN':'AFR',
     'TUR':'ASI',
@@ -691,9 +691,15 @@ for note in recentnotes:
         country = three_let_code[countrycode]
         continent = continentCode[countrycode]
         code2 = ''
-        # special exception
+        # special exceptions for large countries 
         if countrycode=='CIN':
             code2 = '/CIN-PR'
+        elif countrycode=='RUS':
+            code2 = '/RUS-GENERAL'
+        elif countrycode=='MEX':
+            code2 = '/MEX-GENERAL'
+        elif countrycode=='USA':
+            code2 = '/USA-FEDRES'
         url = 'http://banknote.ws/COLLECTION/countries/' + continent + '/' + countrycode + code2 + '/' + note 
         print(url)
         extractText(url, country)
@@ -702,7 +708,7 @@ for note in recentnotes:
    
     
 # write to CSV     
-with open('banknotesdata.csv', 'w', newline='', encoding="utf-8-sig") as csvfile:
+with open('missing-banknotes-data.csv', 'w', newline='', encoding="utf-8-sig") as csvfile:
     banknotewriter = csv.writer(csvfile, delimiter=',')
     banknotewriter.writerow(['country', 'pick', 'denomination', 'currency_name', 'date', 'issuer', 'front_text', 'back_text'])
     for country in targetURLs:
